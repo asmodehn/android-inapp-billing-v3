@@ -28,7 +28,7 @@ Getting Started
 ```
 * Create instance of BillingProcessor class and implement callback in your Activity source code. Constructor will take 3 parameters:
   - **Context**
-  - **Your Merchant Key from Google Developer console.** This will be used to verify purchase signatures. You can pass NULL if you would like to skip this check
+  - **Your License Key from Google Developer console.** This will be used to verify purchase signatures. You can pass NULL if you would like to skip this check (*You can find your key in Google Play Console -> Your App Name -> Services & APIs*)
   - **IBillingHandler Interface implementation to handle purchase results and errors** (see below)
 ```java
 public class SomeActivity extends Activity implements BillingProcessor.IBillingHandler {
@@ -52,7 +52,7 @@ public class SomeActivity extends Activity implements BillingProcessor.IBillingH
 	}
 	
 	@Override
-	public void onProductPurchased(String productId) {
+	public void onProductPurchased(String productId, TransactionDetails details) {
 		/*
 		 * Called then requested PRODUCT ID was successfully purchased
 		 */
@@ -121,6 +121,50 @@ Notice On Canceled/Expired Subscriptions
 Since Google's v3 API doesn't provide any callbacks to handle canceled and/or expired subscriptions you have to handle it on your own.
 The easiest way to do this - call periodically `bp.loadOwnedPurchasesFromGoogle()` method.
 
+Getting Listing Details of Your Products
+--------------------------
+To query listing price and a description of your product / subscription listed in Google Play use these methods:
+
+```java
+    bp.getPurchaseListingDetails("YOUR PRODUCT ID FROM GOOGLE PLAY CONSOLE HERE");
+    bp.getSubscriptionListingDetails("YOUR SUBSCRIPTION ID FROM GOOGLE PLAY CONSOLE HERE");
+```
+
+As a result you will get a `SkuDetails` object with the following info included:
+
+```java
+    public final String productId;
+    public final String title;
+    public final String description;
+    public final boolean isSubscription;
+    public final String currency;
+    public final Double priceValue;
+    public final String priceText;
+```
+
+Getting Purchase Transaction Details
+--------------------------
+As a part or 1.0.9 changes, `TransactionDetails` object is passed to `onProductPurchased` method of a handler class.
+However, you can always retrieve it later calling these methods:
+
+```java
+    bp.getPurchaseTransactionDetails("YOUR PRODUCT ID FROM GOOGLE PLAY CONSOLE HERE");
+    bp.getSubscriptionTransactionDetails("YOUR SUBSCRIPTION ID FROM GOOGLE PLAY CONSOLE HERE");
+```
+
+As a result you will get a `TransactionDetails` object with the following info included:
+
+```java
+    public final String productId;
+    public final String orderId;
+    public final String purchaseToken;
+    public final Date purchaseTime;
+    
+    // containing the raw json string from google play and the signature to
+    // verify the purchase on your own server
+    public final PurchaseInfo purchaseInfo;
+```
+
 ## License
 
 Copyright 2014 AnjLab
@@ -143,4 +187,4 @@ limitations under the License.
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+5. **Create New Pull Request**

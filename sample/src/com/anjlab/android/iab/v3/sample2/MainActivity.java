@@ -1,3 +1,18 @@
+/**
+ * Copyright 2014 AnjLab
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.anjlab.android.iab.v3.sample2;
 
 import android.app.Activity;
@@ -9,26 +24,35 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.anjlab.android.iab.v3.BillingProcessor;
+import com.anjlab.android.iab.v3.SkuDetails;
+import com.anjlab.android.iab.v3.TransactionDetails;
 
 public class MainActivity extends Activity {
-    private BillingProcessor bp;
-    private boolean readyToPurchase = false;
-    private static final String LOG_TAG = "iabv3";
+	// SAMPLE APP CONSTANTS
+	private static final String ACTIVITY_NUMBER = "activity_num";
+	private static final String LOG_TAG = "iabv3";
 
     // PRODUCT & SUBSCRIPTION IDS
     private static final String PRODUCT_ID = "com.anjlab.test.iab.s2.p5";
     private static final String SUBSCRIPTION_ID = "com.anjlab.test.iab.subs1";
-    private static final String LICENSE_KEY = "YOUR MERCHANT KEY HERE";
+    private static final String LICENSE_KEY = null; // PUT YOUR MERCHANT KEY HERE;
+
+	private BillingProcessor bp;
+	private boolean readyToPurchase = false;
 
 
-    @Override
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+		TextView title = (TextView)findViewById(R.id.titleTextView);
+		title.setText(String.format(getString(R.string.title), getIntent().getIntExtra(ACTIVITY_NUMBER, 1)));
+
         bp = new BillingProcessor(this, LICENSE_KEY, new BillingProcessor.IBillingHandler() {
             @Override
-            public void onProductPurchased(String productId) {
-                showToast("onProductPurchased: " + productId);
+            public void onProductPurchased(String productId, TransactionDetails details) {
+				showToast("onProductPurchased: " + productId);
                 updateTextViews();
             }
             @Override
@@ -37,6 +61,7 @@ public class MainActivity extends Activity {
             }
             @Override
             public void onBillingInitialized() {
+				showToast("onBillingInitialized");
                 readyToPurchase = true;
                 updateTextViews();
             }
@@ -50,9 +75,16 @@ public class MainActivity extends Activity {
                 updateTextViews();
             }
         });
-    } // end onCreate()
+    }
 
-    @Override
+	@Override
+	protected void onResume() {
+		super.onResume();
+
+		updateTextViews();
+	}
+
+	@Override
     public void onDestroy() {
         if (bp != null)
             bp.release();
@@ -73,7 +105,7 @@ public class MainActivity extends Activity {
     }
 
     private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     public void onClick(View v) {
@@ -91,6 +123,10 @@ public class MainActivity extends Activity {
                 if (consumed)
                     showToast("Successfully consumed");
                 break;
+            case R.id.productDetailsButton:
+				SkuDetails sku = bp.getPurchaseListingDetails(PRODUCT_ID);
+                showToast(sku != null ? sku.toString() : "Failed to load SKU details");
+                break;
             case R.id.subscribeButton:
                 bp.subscribe(SUBSCRIPTION_ID);
                 break;
@@ -100,6 +136,13 @@ public class MainActivity extends Activity {
                     updateTextViews();
                 }
                 break;
+            case R.id.subsDetailsButton:
+				SkuDetails subs = bp.getSubscriptionListingDetails(SUBSCRIPTION_ID);
+				showToast(subs != null ? subs.toString() : "Failed to load subscription details");
+				break;
+			case R.id.launchMoreButton:
+				startActivity(new Intent(this, MainActivity.class).putExtra(ACTIVITY_NUMBER, getIntent().getIntExtra(ACTIVITY_NUMBER, 1) + 1));
+				break;
             default:
                 break;
         }

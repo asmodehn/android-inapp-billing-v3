@@ -1,39 +1,52 @@
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
 group 'com.anjlab.android.iab.v3'
-version '1.0.8'
+version '1.0.18'
 
 android {
     compileSdkVersion 8
-    buildToolsVersion '19.0.3'
+    buildToolsVersion '21.0.2'
 
     defaultConfig {
         versionCode 1
         versionName project.version
         minSdkVersion 8
-        targetSdkVersion 19
+        targetSdkVersion 21
     }
 
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-        }
+    sourceSets.main {
+        manifest.srcFile 'AndroidManifest.xml'
+        java.srcDir 'src'
+        aidl.srcDir 'src'
     }
 }
 
-configurations {
-    archives {
-        extendsFrom configurations.default
-    }
-}
+configurations.archives.extendsFrom configurations.default
 
 signing {
     required { has("release") && gradle.taskGraph.hasTask("uploadArchives") }
     sign configurations.archives
+}
+
+task androidJavadocs(type: Javadoc) {
+    source = 'src/main/java'
+}
+
+task androidJavadocsJar(type: Jar, dependsOn: androidJavadocs) {
+    classifier = 'javadoc'
+    from androidJavadocs.destinationDir
+}
+
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from 'src/main/java'
+}
+
+artifacts {
+    archives androidSourcesJar
+    archives androidJavadocsJar
 }
 
 uploadArchives {
@@ -78,7 +91,7 @@ uploadArchives {
 
 android.libraryVariants.all { variant ->
     def name = variant.buildType.name
-    if (name.equals(com.android.builder.BuilderConstants.DEBUG)) {
+    if (name.equals('com.android.builder.BuilderConstants.DEBUG')) {
         return; // Skip debug builds.
     }
     def task = project.tasks.create "jar${name.capitalize()}", Jar
